@@ -1332,9 +1332,9 @@ def export_to_google_sheets(leads: list[Lead], config: ScraperConfig, sheet_name
 # MAIN ORCHESTRATOR
 # ────────────────────────────────────────────────────────────
 
-async def run_scraper(config: ScraperConfig, on_source_start=None, on_source_done=None) -> dict:
+async def run_scraper(config: ScraperConfig, on_source_start=None, on_source_done=None, live_results=None) -> dict:
     """Run the full scraper pipeline and return results."""
-    all_results: list[Lead] = []
+    all_results: list[Lead] = live_results if live_results is not None else []
     deduper = Deduplicator(name_threshold=config.dedup_threshold)
     limiter = RateLimiter(requests_per_minute=config.requests_per_minute)
 
@@ -1634,8 +1634,25 @@ async def run_scraper_task(req: ScrapeRequest):
             industry=req.industry,
             sources=req.sources,
         )
+
+        # Shared live list — run_scraper appends to it, updater reads len()
+        live_results = []
+
+        async def live_counter():
+            while scraper_status["running"]:
+                scraper_status["leads_found"] = len(live_results)
+                await asyncio.sleep(5)
+
+        updater = asyncio.create_task(live_counter())
+
         scraper_status["progress"] = 10
-        result = await run_scraper(config, on_source_start=on_source_start, on_source_done=on_source_done)
+        result = await run_scraper(
+            config,
+            on_source_start=on_source_start,
+            on_source_done=on_source_done,
+            live_results=live_results,
+        )
+        updater.cancel()
         scraper_status["current_source"] = "Booking check..."
         scraper_status["progress"] = 90
         scraper_status["progress"] = 100

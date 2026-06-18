@@ -1563,12 +1563,11 @@ def main():
     return result
 
 
-if __name__ == "__main__":
-    main()
-
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
+import os as _os
 
 app = FastAPI(title="Universal Scraper API")
 
@@ -1598,26 +1597,27 @@ class ScrapeRequest(BaseModel):
 
 async def run_scraper_task(req: ScrapeRequest):
     global scraper_status
-    scraper_status["running"] = True
-    scraper_status["progress"] = 10
-    scraper_status["results"] = []
-    
+    scraper_status.update({
+        "running": True,
+        "progress": 5,
+        "results": [],
+        "leads_found": 0,
+        "current_source": "Starting...",
+    })
     try:
-        # Ici, vous instanciez votre logique existante :
-        # config = ScraperConfig(location=req.location, country=req.country, ...)
-        # En cours d'exécution, mettez à jour le dictionnaire global :
-        
-        scraper_status["current_source"] = "Google Maps"
-        await asyncio.sleep(2) # Simulation du traitement initial
-        scraper_status["progress"] = 40
-        
-        scraper_status["current_source"] = "Booking.com"
-        await asyncio.sleep(2)
-        scraper_status["progress"] = 80
-        
-        # Une fois terminé :
+        config = ScraperConfig(
+            location=req.location,
+            country=req.country,
+            industry=req.industry,
+            sources=req.sources,
+        )
+        scraper_status["current_source"] = f"Scraping {', '.join(req.sources)}..."
+        scraper_status["progress"] = 10
+        result = await run_scraper(config)
         scraper_status["progress"] = 100
         scraper_status["current_source"] = "Finished"
+        scraper_status["leads_found"] = result.get("total_leads", 0)
+        scraper_status["results"] = result.get("leads", [])
     except Exception as e:
         scraper_status["current_source"] = f"Error: {str(e)}"
     finally:
@@ -1634,11 +1634,14 @@ def start_scraper(payload: ScrapeRequest, background_tasks: BackgroundTasks):
 def get_status():
     return scraper_status
 
+@app.get("/")
+def serve_dashboard():
+    html_path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "index.html")
+    return FileResponse(html_path, media_type="text/html")
+
 if __name__ == "__main__":
-    # Si on passe l'argument --server, on lance l'API, sinon on tourne en CLI classique
     if "--server" in sys.argv:
         import uvicorn
-        uvicorn.run(app, host="127.0.0.1", port=8000)
+        uvicorn.run(app, host="0.0.0.0", port=8000)
     else:
-        # Votre bloc de parsing CLI existant (argparse) se place ici...
-        print("Lancement du mode CLI classique...")
+        main()

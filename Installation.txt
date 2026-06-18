@@ -1,0 +1,29 @@
+
+ Python 3.11+ installed (python.org/downloads on Windows, brew install python3 on Mac)
+
+
+  git clone https://github.com/artteabcn/scraper.git
+  cd scraper
+
+  # Windows:
+  setup.bat
+
+  # Mac/Linux:
+  chmod +x setup.sh && ./setup.sh
+
+
+  To restart the server (kills the old one and starts fresh):
+
+  Get-NetTCPConnection -LocalPort 8000 -State Listen | Select-Object -ExpandProperty OwningProcess | ForEach-Object {
+  Stop-Process -Id $_ -Force }; Set-Location "C:\OneDrive\Desktop\Scraper\repo"; venv\Scripts\python.exe
+  universal_scraper.py --server
+
+  Or if you prefer two separate steps:
+
+  # Stop
+  Get-NetTCPConnection -LocalPort 8000 -State Listen | Select-Object -ExpandProperty OwningProcess | ForEach-Object {
+  Stop-Process -Id $_ -Force }
+
+  # Start
+  cd "C:\OneDrive\Desktop\Scraper\repo"
+  venv\Scripts\python.exe universal_scraper.py --ser

@@ -442,8 +442,9 @@
         <div class="progress-fill" id="progressFill" style="width:0%"></div>
       </div>
       <div style="margin-top:8px;font-size:0.8rem;color:var(--fg3);">
-        Leads found so far: <span id="progressLeads" style="color:var(--accent);font-weight:700;">0</span>
+        Results so far: <span id="progressLeads" style="color:var(--accent);font-weight:700;">0</span>
       </div>
+      <div id="scrapeLog" style="margin-top:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;max-height:140px;overflow-y:auto;font-family:monospace;font-size:0.78rem;color:var(--fg2);line-height:1.7;"></div>
     </div>
   </div>
 
@@ -1024,12 +1025,17 @@ function exportJSON() {
 const API = window.location.origin;
 let statusInterval = null;
 
-function setProgressUI(pct, source, leads) {
+function setProgressUI(pct, source, leads, log) {
   document.getElementById('progressSection').style.display = 'block';
   document.getElementById('progressFill').style.width = pct + '%';
   document.getElementById('progressPct').textContent = pct + '%';
   document.getElementById('progressSource').textContent = source || 'Running...';
   document.getElementById('progressLeads').textContent = leads || 0;
+  if (log && log.length) {
+    const box = document.getElementById('scrapeLog');
+    box.innerHTML = log.map(l => `<div>${esc(l)}</div>`).join('');
+    box.scrollTop = box.scrollHeight;
+  }
 }
 
 function runScraper() {
@@ -1077,7 +1083,7 @@ function checkScraperStatus() {
   fetch(`${API}/api/status`)
   .then(res => res.json())
   .then(status => {
-    setProgressUI(status.progress, status.current_source, status.leads_found);
+    setProgressUI(status.progress, status.current_source, status.leads_found, status.log);
 
     if (!status.running && status.progress === 100) {
       clearInterval(statusInterval);

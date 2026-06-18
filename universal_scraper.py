@@ -1332,7 +1332,7 @@ def export_to_google_sheets(leads: list[Lead], config: ScraperConfig, sheet_name
 # MAIN ORCHESTRATOR
 # ────────────────────────────────────────────────────────────
 
-async def run_scraper(config: ScraperConfig) -> dict:
+async def run_scraper(config: ScraperConfig, on_source_start=None, on_source_done=None) -> dict:
     """Run the full scraper pipeline and return results."""
     all_results: list[Lead] = []
     deduper = Deduplicator(name_threshold=config.dedup_threshold)
@@ -1362,6 +1362,8 @@ async def run_scraper(config: ScraperConfig) -> dict:
 
         source_results = {}
         for source in config.sources:
+            if on_source_start:
+                on_source_start(source)
             if source == "maps":
                 source_results["maps"] = await scrape_maps_source(config, context, deduper, limiter)
                 all_results.extend(source_results["maps"])
@@ -1380,6 +1382,8 @@ async def run_scraper(config: ScraperConfig) -> dict:
             elif source == "instagram":
                 source_results["instagram"] = await scrape_instagram_source(config, context, deduper, limiter)
                 all_results.extend(source_results["instagram"])
+            if on_source_done:
+                on_source_done(source, len(all_results))
 
         # Booking check for all leads with websites
         print(f"\n[BOOKING CHECK] Checking {sum(1 for r in all_results if r.website)} websites...")
@@ -1588,6 +1592,7 @@ scraper_status = {
     "current_source": "Idle",
     "results": [],
     "summary": {},
+    "log": [],
 }
 
 class ScrapeRequest(BaseModel):
@@ -1604,7 +1609,24 @@ async def run_scraper_task(req: ScrapeRequest):
         "results": [],
         "leads_found": 0,
         "current_source": "Starting...",
+        "summary": {},
+        "log": [f"Starting scrape: {req.location} ({req.country}) — {req.industry}"],
     })
+
+    n_sources = len(req.sources)
+    done = [0]
+
+    def on_source_start(source):
+        scraper_status["current_source"] = f"Scraping {source}..."
+        scraper_status["log"].append(f"▶ {source} started")
+
+    def on_source_done(source, total_so_far):
+        done[0] += 1
+        pct = 10 + int(75 * done[0] / n_sources)
+        scraper_status["progress"] = pct
+        scraper_status["leads_found"] = total_so_far
+        scraper_status["log"].append(f"✓ {source} done — {total_so_far} total so far")
+
     try:
         config = ScraperConfig(
             location=req.location,
@@ -1612,13 +1634,15 @@ async def run_scraper_task(req: ScrapeRequest):
             industry=req.industry,
             sources=req.sources,
         )
-        scraper_status["current_source"] = f"Scraping {', '.join(req.sources)}..."
         scraper_status["progress"] = 10
-        result = await run_scraper(config)
+        result = await run_scraper(config, on_source_start=on_source_start, on_source_done=on_source_done)
+        scraper_status["current_source"] = "Booking check..."
+        scraper_status["progress"] = 90
         scraper_status["progress"] = 100
         scraper_status["current_source"] = "Finished"
-        scraper_status["leads_found"] = result.get("total_leads", 0)
+        scraper_status["leads_found"] = result.get("total_scraped", 0)
         scraper_status["results"] = result.get("all_results", [])
+        scraper_status["log"].append(f"✅ Done — {result.get('total_scraped', 0)} scraped, {result.get('total_leads', 0)} leads")
         scraper_status["summary"] = {
             "total_scraped": result.get("total_scraped", 0),
             "total_leads": result.get("total_leads", 0),
@@ -1629,6 +1653,7 @@ async def run_scraper_task(req: ScrapeRequest):
         }
     except Exception as e:
         scraper_status["current_source"] = f"Error: {str(e)}"
+        scraper_status["log"].append(f"❌ Error: {str(e)}")
     finally:
         scraper_status["running"] = False
 

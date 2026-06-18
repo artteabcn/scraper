@@ -1,0 +1,45 @@
+{
+  "location": "Koh Samui",
+  "country": "Thailand",
+  "province": "Surat Thani",
+  "industry": "hotel",
+  "sources": ["maps", "booking", "tripadvisor", "facebook", "instagram", "agoda"],
+  "booking_pages": 5,
+  "tripadvisor_pages": 4,
+  "agoda_pages": 5,
+  "requests_per_minute": 20,
+  "maps_queries": [
+    "bed and breakfast koh samui",
+    "guesthouse koh samui thailand",
+    "boutique hotel koh samui",
+    "small hotel koh samui",
+    "bungalow resort koh samui",
+    "villa koh samui",
+    "homestay koh samui",
+    "resort koh samui cheap"
+  ],
+  "facebook_queries": [
+    "ที่พัก เกาะสมุย",
+    "หอพัก เกาะสมุย",
+    "โรงแรมราคาถูก เกาะสมุย",
+    "บ้านพัก เกาะสมุย",
+    "รีสอร์ท เกาะสมุย ราคาถูก",
+    "เกสต์เฮ้าส์ สมุย",
+    "koh samui homestay",
+    "koh samui cheap guesthouse"
+  ],
+  "instagram_queries": [
+    "#kohsamuihotel",
+    "#kohsamuiresort",
+    "#kohsamuivilla",
+    "#kohsamuiguesthouse",
+    "#kohsamuistay"
+  ],
+  "output_dir": ".",
+  "headless": true,
+  "google_sheets": {
+    "enabled": true,
+    "sheet_id": "YOUR_GOOGLE_SHEET_ID_HERE",
+    "credentials": "credentials.json"
+  }
+}

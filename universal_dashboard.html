@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Universal Lead Scraper Dashboard</title>
+<style>
+  :root {
+    --bg: #0a0e17; --bg2: #111827; --bg3: #1f2937; --bg4: #374151;
+    --fg: #f3f4f6; --fg2: #9ca3af; --fg3: #6b7280;
+    --accent: #06b6d4; --accent2: #8b5cf6; --accent3: #f59e0b;
+    --success: #10b981; --warn: #f59e0b; --danger: #ef4444;
+    --border: #374151; --radius: 12px;
+    --shadow: 0 4px 32px rgba(0,0,0,0.5);
+    --glow: 0 0 20px rgba(6,182,212,0.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--fg);
+    min-height: 100vh; line-height: 1.6;
+  }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--fg3); border-radius: 4px; }
+  header {
+    background: linear-gradient(135deg, var(--bg2), var(--bg3));
+    border-bottom: 1px solid var(--border);
+    padding: 24px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  header h1 {
+    font-size: 1.5rem; font-weight: 800;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  header .subtitle { color: var(--fg2); font-size: 0.85rem; }
+  .container { max-width: 1700px; margin: 0 auto; padding: 24px 32px; }
+
+  .panel {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px;
+    margin-bottom: 24px; box-shadow: var(--shadow);
+  }
+  .panel-title {
+    font-size: 1.2rem; font-weight: 700;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title .icon { font-size: 1.3rem; }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label {
+    font-size: 0.75rem; color: var(--fg2); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px;
+    color: var(--fg); font-size: 0.9rem; font-family: inherit;
+    transition: all 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(6,182,212,0.15);
+  }
+  .form-group textarea { min-height: 80px; resize: vertical; }
+  .form-group input[type="number"] { max-width: 120px; }
+  .form-hint { color: var(--fg3); font-size: 0.75rem; margin-top: 2px; }
+
+  .checkbox-group {
+    display: flex; flex-wrap: wrap; gap: 10px; padding: 8px 0;
+  }
+  .checkbox-item {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 14px;
+    cursor: pointer; transition: all 0.2s; user-select: none;
+    font-size: 0.85rem;
+  }
+  .checkbox-item:hover { border-color: var(--accent); }
+  .checkbox-item.active {
+    border-color: var(--accent);
+    background: rgba(6,182,212,0.1);
+    box-shadow: var(--glow);
+  }
+  .checkbox-item input { display: none; }
+  .checkbox-item .check {
+    width: 16px; height: 16px; border: 2px solid var(--fg3);
+    border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .checkbox-item.active .check {
+    background: var(--accent); border-color: var(--accent);
+  }
+  .checkbox-item.active .check::after {
+    content: "✓"; color: var(--bg); font-size: 0.7rem; font-weight: bold;
+  }
+
+  .btn-row { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+  .btn {
+    padding: 12px 22px; border-radius: 8px; border: none;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff; box-shadow: 0 4px 16px rgba(6,182,212,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(6,182,212,0.4); }
+  .btn-secondary {
+    background: var(--bg3); color: var(--fg); border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-success {
+    background: linear-gradient(135deg, var(--success), #059669);
+    color: #fff;
+  }
+  .btn-warn {
+    background: linear-gradient(135deg, var(--warn), #d97706);
+    color: #fff;
+  }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 14px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    text-align: center; box-shadow: var(--shadow);
+    transition: all 0.3s; position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .stat-card:hover { transform: translateY(-3px); }
+  .stat-card:hover::before { opacity: 1; }
+  .stat-card .stat-value {
+    font-size: 2rem; font-weight: 800;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .stat-card .stat-label { color: var(--fg2); font-size: 0.75rem; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat-card .stat-sub { color: var(--fg3); font-size: 0.7rem; margin-top: 2px; }
+
+  .filters-bar {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    align-items: center; padding: 14px 0;
+    border-bottom: 1px solid var(--border); margin-bottom: 14px;
+  }
+  .filters-bar input, .filters-bar select {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 14px;
+    color: var(--fg); font-size: 0.85rem;
+  }
+  .filters-bar input { min-width: 220px; }
+
+  .table-wrap {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  thead { background: var(--bg3); position: sticky; top: 0; z-index: 2; }
+  th {
+    padding: 14px 14px; text-align: left; font-weight: 700;
+    color: var(--fg2); text-transform: uppercase; font-size: 0.7rem;
+    letter-spacing: 0.06em; border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  th:hover { color: var(--accent); }
+  th .sort-arrow { margin-left: 4px; opacity: 0.4; font-size: 0.8rem; }
+  th.sorted .sort-arrow { opacity: 1; color: var(--accent); }
+  td {
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:hover td { background: rgba(6,182,212,0.04); }
+  tr:last-child td { border-bottom: none; }
+
+  .badge {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 20px; font-size: 0.7rem;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .badge-maps { background: rgba(6,182,212,0.15); color: var(--accent); }
+  .badge-booking { background: rgba(139,92,246,0.15); color: var(--accent2); }
+  .badge-tripadvisor { background: rgba(16,185,129,0.15); color: var(--success); }
+  .badge-facebook { background: rgba(245,158,11,0.15); color: var(--warn); }
+  .badge-instagram { background: linear-gradient(135deg, rgba(225,48,108,0.15), rgba(252,175,69,0.15)); color: #e1306c; }
+  .badge-agoda { background: rgba(99,102,241,0.15); color: #6366f1; }
+  .badge-yes { background: rgba(16,185,129,0.15); color: var(--success); }
+  .badge-no { background: rgba(239,68,68,0.15); color: var(--danger); }
+  .badge-unknown { background: rgba(156,163,175,0.15); color: var(--fg2); }
+  .badge-hotel { background: rgba(6,182,212,0.1); color: var(--accent); border: 1px solid rgba(6,182,212,0.2); }
+  .badge-restaurant { background: rgba(245,158,11,0.1); color: var(--warn); border: 1px solid rgba(245,158,11,0.2); }
+
+  .truncate { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .truncate-sm { max-width: 120px; }
+  .link { color: var(--accent); text-decoration: none; }
+  .link:hover { text-decoration: underline; }
+  .phone-normalized { font-size: 0.75rem; color: var(--fg3); font-family: monospace; }
+
+  .pagination {
+    display: flex; justify-content: center; align-items: center;
+    gap: 5px; padding: 14px; border-top: 1px solid var(--border);
+  }
+  .pagination button {
+    background: var(--bg3); border: 1px solid var(--border);
+    color: var(--fg); padding: 5px 11px; border-radius: 6px;
+    cursor: pointer; font-size: 0.82rem; transition: all 0.2s;
+  }
+  .pagination button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .pagination button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pagination .page-info { color: var(--fg2); font-size: 0.82rem; margin: 0 10px; }
+
+  .toast-container {
+    position: fixed; top: 20px; right: 20px; z-index: 1000;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .toast {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 20px;
+    box-shadow: var(--shadow); animation: slideIn 0.3s ease;
+    display: flex; align-items: center; gap: 10px;
+    min-width: 300px; font-size: 0.9rem;
+  }
+  .toast.success { border-left: 4px solid var(--success); }
+  .toast.error { border-left: 4px solid var(--danger); }
+  .toast.info { border-left: 4px solid var(--accent); }
+  .toast.warn { border-left: 4px solid var(--warn); }
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px); display: flex;
+    align-items: center; justify-content: center;
+    z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 28px;
+    max-width: 700px; width: 90%; max-height: 85vh;
+    overflow-y: auto; box-shadow: var(--shadow); position: relative;
+  }
+  .modal h3 { margin-bottom: 16px; font-size: 1.1rem; }
+  .modal pre {
+    background: var(--bg3); border-radius: 8px; padding: 16px;
+    overflow-x: auto; font-size: 0.8rem; color: var(--fg2);
+    border: 1px solid var(--border); line-height: 1.5;
+  }
+  .close-btn {
+    position: absolute; top: 12px; right: 16px;
+    background: none; border: none; color: var(--fg2);
+    font-size: 1.6rem; cursor: pointer;
+  }
+  .close-btn:hover { color: var(--fg); }
+
+  .progress-bar {
+    width: 100%; height: 4px; background: var(--bg3);
+    border-radius: 2px; overflow: hidden; margin-top: 8px;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px; transition: width 0.3s; width: 0%;
+  }
+
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--fg2);
+  }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.4; }
+  .empty-state h3 { color: var(--fg); margin-bottom: 8px; }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 768px) {
+    .container { padding: 16px; }
+    header { padding: 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .filters-bar { flex-direction: column; align-items: stretch; }
+    th, td { padding: 10px; font-size: 0.78rem; }
+    .truncate { max-width: 100px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🌐 Universal Lead Scraper</h1>
+    <div class="subtitle">Multi-country · Multi-industry · Multi-source · Deduplicated</div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <button class="btn btn-secondary" onclick="loadDemoData()">📊 Demo Data</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📁 Import JSON</button>
+    <input type="file" id="fileInput" accept=".json" style="display:none" onchange="handleFileImport(event)">
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- CONFIG -->
+  <div class="panel">
+    <div class="panel-title"><span class="icon">⚙️</span> Configuration</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" id="cfgLocation" value="Koh Samui" placeholder="e.g. Bali, Lisbon, Tulum">
+      </div>
+      <div class="form-group">
+        <label>Province / State</label>
+        <input type="text" id="cfgProvince" value="Surat Thani" placeholder="e.g. Bali, Lisbon">
+      </div>
+      <div class="form-group">
+        <label>Country</label>
+        <select id="cfgCountry">
+          <option value="Thailand">Thailand</option>
+          <option value="Indonesia">Indonesia</option>
+          <option value="Vietnam">Vietnam</option>
+          <option value="Philippines">Philippines</option>
+          <option value="Malaysia">Malaysia</option>
+          <option value="Singapore">Singapore</option>
+          <option value="Portugal">Portugal</option>
+          <option value="Spain">Spain</option>
+          <option value="Italy">Italy</option>
+          <option value="Greece">Greece</option>
+          <option value="Mexico">Mexico</option>
+          <option value="Brazil">Brazil</option>
+          <option value="Australia">Australia</option>
+          <option value="Japan">Japan</option>
+          <option value="France">France</option>
+          <option value="United States">United States</option>
+          <option value="United Kingdom">United Kingdom</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Industry</label>
+        <select id="cfgIndustry" onchange="updateQueryDefaults()">
+          <option value="hotel">Hotels & Accommodation</option>
+          <option value="restaurant">Restaurants & Dining</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Preset</label>
+        <select id="cfgPreset" onchange="applyPreset()">
+          <option value="">-- Custom --</option>
+          <option value="thailand_hotels">Thailand Hotels</option>
+          <option value="thailand_restaurants">Thailand Restaurants</option>
+          <option value="bali_hotels">Bali Hotels</option>
+          <option value="bali_restaurants">Bali Restaurants</option>
+          <option value="vietnam_hotels">Vietnam Hotels</option>
+          <option value="portugal_hotels">Portugal Hotels</option>
+          <option value="mexico_restaurants">Mexico Restaurants</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Booking.com Pages</label>
+        <input type="number" id="cfgBookingPages" value="5" min="1" max="20">
+      </div>
+      <div class="form-group">
+        <label>TripAdvisor Pages</label>
+        <input type="number" id="cfgTripadvisorPages" value="4" min="1" max="20">
+      </div>
+      <div class="form-group">
+        <label>Agoda Pages</label>
+        <input type="number" id="cfgAgodaPages" value="5" min="1" max="20">
+      </div>
+      <div class="form-group">
+        <label>Rate Limit (req/min)</label>
+        <input type="number" id="cfgRPM" value="20" min="5" max="120">
+        <div class="form-hint">Higher = faster but more likely blocked</div>
+      </div>
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>Google Maps Queries (one per line)</label>
+        <textarea id="cfgMapsQueries"></textarea>
+      </div>
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>Facebook / Local Language Queries (one per line)</label>
+        <textarea id="cfgFbQueries"></textarea>
+      </div>
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label>Instagram Hashtag Queries (one per line)</label>
+        <textarea id="cfgIgQueries"></textarea>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <label style="font-size:0.75rem;color:var(--fg2);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Data Sources</label>
+      <div class="checkbox-group" id="sourceCheckboxes">
+        <div class="checkbox-item active" data-value="maps" onclick="toggleSource(this)">
+          <div class="check"></div><input type="checkbox" checked value="maps"><span>Maps</span>
+        </div>
+        <div class="checkbox-item active" data-value="booking" onclick="toggleSource(this)">
+          <div class="check"></div><input type="checkbox" checked value="booking"><span>Booking</span>
+        </div>
+        <div class="checkbox-item active" data-value="agoda" onclick="toggleSource(this)">
+          <div class="check"></div><input type="checkbox" checked value="agoda"><span>Agoda</span>
+        </div>
+        <div class="checkbox-item active" data-value="tripadvisor" onclick="toggleSource(this)">
+          <div class="check"></div><input type="checkbox" checked value="tripadvisor"><span>TripAdvisor</span>
+        </div>
+        <div class="checkbox-item active" data-value="facebook" onclick="toggleSource(this)">
+          <div class="check"></div><input type="checkbox" checked value="facebook"><span>Facebook</span>
+        </div>
+        <div class="checkbox-item active" data-value="instagram" onclick="toggleSource(this)">
+          <div class="check"></div><input type="checkbox" checked value="instagram"><span>Instagram</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="generateConfig()">Generate Config</button>
+      <button class="btn btn-warn" onclick="runScraper()">Run Scraper</button>
+      <button class="btn btn-secondary" onclick="resetConfig()">Reset</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Total Scraped</div><div class="stat-sub">all sources</div></div>
+    <div class="stat-card"><div class="stat-value" id="statLeads">0</div><div class="stat-label">Leads Found</div><div class="stat-sub">no/weak booking</div></div>
+    <div class="stat-card"><div class="stat-value" id="statDeduped">0</div><div class="stat-label">Unique</div><div class="stat-sub">after dedup</div></div>
+    <div class="stat-card"><div class="stat-value" id="statNoSite">0</div><div class="stat-label">No Website</div><div class="stat-sub">prime targets</div></div>
+    <div class="stat-card"><div class="stat-value" id="statNoBooking">0</div><div class="stat-label">Site, No Booking</div><div class="stat-sub">upgrade candidates</div></div>
+    <div class="stat-card"><div class="stat-value" id="statMaps">0</div><div class="stat-label">Maps</div><div class="stat-sub">properties</div></div>
+    <div class="stat-card"><div class="stat-value" id="statBooking">0</div><div class="stat-label">Booking</div><div class="stat-sub">properties</div></div>
+    <div class="stat-card"><div class="stat-value" id="statAgoda">0</div><div class="stat-label">Agoda</div><div class="stat-sub">properties</div></div>
+    <div class="stat-card"><div class="stat-value" id="statTA">0</div><div class="stat-label">TripAdvisor</div><div class="stat-sub">properties</div></div>
+    <div class="stat-card"><div class="stat-value" id="statFB">0</div><div class="stat-label">Facebook</div><div class="stat-sub">properties</div></div>
+    <div class="stat-card"><div class="stat-value" id="statIG">0</div><div class="stat-label">Instagram</div><div class="stat-sub">profiles</div></div>
+    <div class="stat-card"><div class="stat-value" id="statCountries">0</div><div class="stat-label">Countries</div><div class="stat-sub">in dataset</div></div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="panel" id="resultsPanel">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+      <div class="panel-title" style="margin:0;"><span class="icon">📋</span> Results</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-success" onclick="exportCSV('leads')">Leads CSV</button>
+        <button class="btn btn-secondary" onclick="exportCSV('all')">All CSV</button>
+        <button class="btn btn-secondary" onclick="exportJSON()">JSON</button>
+        <button class="btn btn-secondary" onclick="showSheetsGuide()">Sheets Setup</button>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <input type="text" id="filterText" placeholder="Search name, address, notes..." oninput="applyFilters()">
+      <select id="filterSource" onchange="applyFilters()">
+        <option value="">All Sources</option>
+        <option value="Google Maps">Maps</option>
+        <option value="Booking.com">Booking</option>
+        <option value="Agoda">Agoda</option>
+        <option value="TripAdvisor">TripAdvisor</option>
+        <option value="Facebook (via Maps)">Facebook</option>
+        <option value="Instagram">Instagram</option>
+      </select>
+      <select id="filterIndustry" onchange="applyFilters()">
+        <option value="">All Industries</option>
+        <option value="hotel">Hotels</option>
+        <option value="restaurant">Restaurants</option>
+      </select>
+      <select id="filterBooking" onchange="applyFilters()">
+        <option value="">All Booking Status</option>
+        <option value="no">No Direct Booking</option>
+        <option value="yes">Has Direct Booking</option>
+        <option value="unknown">Unknown</option>
+      </select>
+      <select id="filterWebsite" onchange="applyFilters()">
+        <option value="">All Website Status</option>
+        <option value="no">No Website</option>
+        <option value="yes">Has Website</option>
+      </select>
+      <select id="filterView" onchange="applyFilters()">
+        <option value="leads">Leads Only</option>
+        <option value="all">All Results</option>
+      </select>
+      <div style="margin-left:auto;color:var(--fg2);font-size:0.8rem;" id="resultCount">0 results</div>
+    </div>
+
+    <div class="table-wrap">
+      <div id="emptyState" class="empty-state">
+        <div class="icon">📭</div>
+        <h3>No data yet</h3>
+        <p>Load demo data, import a JSON file, or run the scraper to see results.</p>
+      </div>
+      <table id="resultsTable" class="hidden">
+        <thead>
+          <tr>
+            <th onclick="sortTable('name')">Name <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('address')">Address <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('phone_normalized')">Phone <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('rating')">Rating <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('source')">Source <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('industry')">Industry <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('has_website')">Website <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable('has_direct_booking')">Booking <span class="sort-arrow">↕</span></th>
+            <th>Notes</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="modal-overlay" id="configModal">
+  <div class="modal">
+    <button class="close-btn" onclick="closeModal()">×</button>
+    <h3>Generated Config (JSON)</h3>
+    <p style="color:var(--fg2);font-size:0.85rem;margin-bottom:12px;">
+      Save as <code>config.json</code> then run:<br>
+      <code style="background:var(--bg3);padding:4px 8px;border-radius:4px;">python universal_scraper.py --config config.json</code>
+    </p>
+    <pre id="configOutput"></pre>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-primary" onclick="copyConfig()">Copy</button>
+      <button class="btn btn-secondary" onclick="downloadConfig()">Download</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="sheetsModal">
+  <div class="modal">
+    <button class="close-btn" onclick="closeSheetsModal()">×</button>
+    <h3>Google Sheets Setup Guide</h3>
+    <div style="color:var(--fg2);font-size:0.9rem;line-height:1.7;">
+      <p><strong>1. Create a Google Cloud Project</strong><br>
+      Go to <a href="https://console.cloud.google.com/" target="_blank" class="link">Google Cloud Console</a> and create a new project.</p>
+
+      <p><strong>2. Enable Google Sheets API</strong><br>
+      Navigate to <em>APIs & Services → Library</em>, search for "Google Sheets API", and enable it.</p>
+
+      <p><strong>3. Create Service Account</strong><br>
+      Go to <em>IAM & Admin → Service Accounts</em>, click "Create Service Account".<br>
+      Name it "lead-scraper" and grant it "Editor" role.</p>
+
+      <p><strong>4. Download Credentials</strong><br>
+      Under the service account, go to "Keys" → "Add Key" → "JSON".<br>
+      Save the downloaded file as <code>credentials.json</code> in your scraper folder.</p>
+
+      <p><strong>5. Share Your Sheet</strong><br>
+      Create a Google Sheet, click "Share", and add the service account email (ends with @...gserviceaccount.com) as Editor.</p>
+
+      <p><strong>6. Add to Config</strong></p>
+      <pre style="margin:8px 0;">{
+  "google_sheets": {
+    "enabled": true,
+    "sheet_id": "YOUR_SHEET_ID_FROM_URL",
+    "credentials": "credentials.json"
+  }
+}</pre>
+
+      <p><strong>7. Install Dependency</strong></p>
+      <pre style="margin:8px 0;">pip install gspread google-auth</pre>
+    </div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-secondary" onclick="closeSheetsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+// ─── STATE ───
+let allData = [];
+let filteredData = [];
+let currentPage = 1;
+let pageSize = 25;
+let sortCol = 'name';
+let sortAsc = true;
+
+const PRESETS = {
+  thailand_hotels: {
+    location: "Koh Samui", province: "Surat Thani", country: "Thailand", industry: "hotel",
+    maps_queries: ["bed and breakfast koh samui","guesthouse koh samui thailand","boutique hotel koh samui","small hotel koh samui","bungalow resort koh samui","villa koh samui","homestay koh samui","resort koh samui cheap"],
+    fb_queries: ["ที่พัก เกาะสมุย","หอพัก เกาะสมุย","โรงแรมราคาถูก เกาะสมุย","บ้านพัก เกาะสมุย","รีสอร์ท เกาะสมุย ราคาถูก","เกสต์เฮ้าส์ สมุย","koh samui homestay","koh samui cheap guesthouse"],
+    ig_queries: ["#kohsamuihotel","#kohsamuiresort","#kohsamuivilla","#kohsamuiguesthouse","#kohsamuistay"],
+    sources: ["maps","booking","tripadvisor","facebook","instagram","agoda"]
+  },
+  thailand_restaurants: {
+    location: "Koh Samui", province: "Surat Thani", country: "Thailand", industry: "restaurant",
+    maps_queries: ["restaurant koh samui","cafe koh samui","bar koh samui","bistro koh samui","eatery koh samui","food koh samui","dining koh samui"],
+    fb_queries: ["ร้านอาหาร เกาะสมุย","คาเฟ่ เกาะสมุย","บาร์ เกาะสมุย","ร้านกาแฟ เกาะสมุย","koh samui restaurant","koh samui cafe","koh samui bar"],
+    ig_queries: ["#kohsamuirestaurant","#kohsamuifood","#kohsamuicafe","#kohsamuibar","#kohsamuieats"],
+    sources: ["maps","tripadvisor","facebook","instagram"]
+  },
+  bali_hotels: {
+    location: "Bali", province: "Bali", country: "Indonesia", industry: "hotel",
+    maps_queries: ["bed and breakfast bali","guesthouse bali indonesia","boutique hotel bali","small hotel bali","bungalow resort bali","villa bali","homestay bali","resort bali cheap"],
+    fb_queries: ["penginapan bali","guest house bali","hotel murah bali","villa bali","resort bali murah","bali homestay","bali cheap guesthouse"],
+    ig_queries: ["#balihotel","#baliresort","#balivilla","#baliguesthouse","#balistay"],
+    sources: ["maps","booking","tripadvisor","facebook","instagram","agoda"]
+  },
+  bali_restaurants: {
+    location: "Bali", province: "Bali", country: "Indonesia", industry: "restaurant",
+    maps_queries: ["restaurant bali","cafe bali","bar bali","bistro bali","eatery bali","food bali","dining bali"],
+    fb_queries: ["restoran bali","kafe bali","bar bali","kopi bali","bali restaurant","bali cafe","bali bar"],
+    ig_queries: ["#balirestaurant","#balifood","#balicafe","#balibar","#balieats"],
+    sources: ["maps","tripadvisor","facebook","instagram"]
+  },
+  vietnam_hotels: {
+    location: "Da Nang", province: "Da Nang", country: "Vietnam", industry: "hotel",
+    maps_queries: ["bed and breakfast da nang","guesthouse da nang vietnam","boutique hotel da nang","small hotel da nang","bungalow resort da nang","villa da nang","homestay da nang","resort da nang cheap"],
+    fb_queries: ["khach san da nang","nha nghi da nang","homestay da nang","villa da nang","da nang hotel","da nang homestay"],
+    ig_queries: ["#dananghotel","#danangresort","#danangvilla","#dananghomestay","#danangstay"],
+    sources: ["maps","booking","tripadvisor","facebook","instagram","agoda"]
+  },
+  portugal_hotels: {
+    location: "Lisbon", province: "Lisbon", country: "Portugal", industry: "hotel",
+    maps_queries: ["bed and breakfast lisbon","guesthouse lisbon portugal","boutique hotel lisbon","small hotel lisbon","hostel lisbon","villa lisbon","homestay lisbon","resort lisbon cheap"],
+    fb_queries: ["alojamento lisboa","guest house lisboa","hotel barato lisboa","villa lisboa","lisbon homestay","lisbon cheap guesthouse"],
+    ig_queries: ["#lisbonhotel","#lisbonhostel","#lisbonvilla","#lisbonhomestay","#lisbonstay"],
+    sources: ["maps","booking","tripadvisor","facebook","instagram","agoda"]
+  },
+  mexico_restaurants: {
+    location: "Tulum", province: "Quintana Roo", country: "Mexico", industry: "restaurant",
+    maps_queries: ["restaurant tulum","cafe tulum","bar tulum","bistro tulum","eatery tulum","food tulum","dining tulum"],
+    fb_queries: ["restaurante tulum","cafe tulum","bar tulum","comida tulum","tulum restaurant","tulum cafe","tulum bar"],
+    ig_queries: ["#tulumrestaurant","#tulumfood","#tulumcafe","#tulumbar","#tulumeats"],
+    sources: ["maps","tripadvisor","facebook","instagram"]
+  }
+};
+
+const DEMO_DATA = {
+  config: { location: "Koh Samui", country: "Thailand", province: "Surat Thani", industry: "hotel", sources: ["maps","booking","tripadvisor","facebook","instagram","agoda"], booking_pages: 5, tripadvisor_pages: 4, agoda_pages: 5 },
+  summary: { total_scraped: 67, total_leads: 52, by_source: { maps: 22, booking: 14, agoda: 8, tripadvisor: 11, facebook: 7, instagram: 5 }, no_website: 28, website_no_booking: 24, deduped: 52, countries: ["Thailand"], industries: ["hotel"] },
+  leads: [
+    { name: "Samui Garden Bungalows", address: "123 Moo 3, Bophut, Koh Samui", phone: "+66 77 123 456", phone_normalized: "+6677123456", rating: "4.2", reviews: "127 reviews", website: "", has_website: "no", has_direct_booking: "no", notes: "No website listed", source: "Google Maps", source_url: "https://maps.google.com/...", scraped_at: "2026-06-15T10:30:00", location_query: "bungalow resort koh samui", industry: "hotel", country: "Thailand", dedup_key: "a1b2c3d4" },
+    { name: "Baan Suan Guesthouse", address: "45/2 Chaweng Beach Rd", phone: "081-234-5678", phone_normalized: "+66812345678", rating: "4.5", reviews: "89 reviews", website: "https://baansuan.example.com", has_website: "yes", has_direct_booking: "no", notes: "Static site, no booking", source: "Google Maps", source_url: "https://maps.google.com/...", scraped_at: "2026-06-15T10:32:00", location_query: "guesthouse koh samui thailand", industry: "hotel", country: "Thailand", dedup_key: "e5f6g7h8" },
+    { name: "Coconut Villa Resort", address: "78/9 Lamai Beach", phone: "", phone_normalized: "", rating: "3.8", reviews: "45 reviews", website: "", has_website: "no", has_direct_booking: "no", notes: "No website listed", source: "Booking.com", source_url: "https://booking.com/...", scraped_at: "2026-06-15T10:35:00", location_query: "", industry: "hotel", country: "Thailand", dedup_key: "i9j0k1l2" },
+    { name: "Paradise Bungalows Khanom", address: "12 Khanom Beach Rd", phone: "+66 75 987 654", phone_normalized: "+6675987654", rating: "4.0", reviews: "203 reviews", website: "https://paradisebungalows.example.com", has_website: "yes", has_direct_booking: "no", notes: "OTA only: booking.com, agoda.com", source: "Agoda", source_url: "https://agoda.com/...", scraped_at: "2026-06-15T10:37:00", location_query: "", industry: "hotel", country: "Thailand", dedup_key: "m3n4o5p6" },
+    { name: "Smile House Samui", address: "Mae Nam, Koh Samui", phone: "077-456-789", phone_normalized: "+6677456789", rating: "4.7", reviews: "312 reviews", website: "", has_website: "no", has_direct_booking: "no", notes: "No website listed", source: "Facebook (via Maps)", source_url: "https://facebook.com/...", scraped_at: "2026-06-15T10:42:00", location_query: "ที่พัก เกาะสมุย", industry: "hotel", country: "Thailand", dedup_key: "q7r8s9t0" },
+    { name: "Sunset View Resort", address: "Hua Thanon, Koh Samui", phone: "", phone_normalized: "", rating: "3.5", reviews: "67 reviews", website: "https://sunsetview.example.com", has_website: "yes", has_direct_booking: "no", notes: "Static site, no booking", source: "TripAdvisor", source_url: "https://tripadvisor.com/...", scraped_at: "2026-06-15T10:40:00", location_query: "", industry: "hotel", country: "Thailand", dedup_key: "u1v2w3x4" },
+    { name: "Tropical Garden Homestay", address: "Bophut Hills", phone: "089-123-4567", phone_normalized: "+66891234567", rating: "4.9", reviews: "56 reviews", website: "", has_website: "no", has_direct_booking: "no", notes: "No website listed", source: "Instagram", source_url: "https://instagram.com/...", scraped_at: "2026-06-15T10:45:00", location_query: "", industry: "hotel", country: "Thailand", dedup_key: "y5z6a7b8" },
+    { name: "Blue Lagoon Bungalows", address: "Lipa Noi, Koh Samui", phone: "+66 77 789 012", phone_normalized: "+6677789012", rating: "4.1", reviews: "178 reviews", website: "https://bluelagoon.example.com", has_website: "yes", has_direct_booking: "no", notes: "OTA only: booking.com", source: "TripAdvisor", source_url: "https://tripadvisor.com/...", scraped_at: "2026-06-15T10:41:00", location_query: "", industry: "hotel", country: "Thailand", dedup_key: "c9d0e1f2" },
+    { name: "Happy Beach House", address: "Chaweng Noi", phone: "", phone_normalized: "", rating: "4.3", reviews: "94 reviews", website: "", has_website: "no", has_direct_booking: "no", notes: "FB-only presence", source: "Facebook (via Maps)", source_url: "https://facebook.com/...", scraped_at: "2026-06-15T10:43:00", location_query: "หอพัก เกาะสมุย", industry: "hotel", country: "Thailand", dedup_key: "g3h4i5j6" },
+    { name: "Mountain View Villa", address: "Maenam Hills", phone: "+66 81 987 6543", phone_normalized: "+66819876543", rating: "4.6", reviews: "145 reviews", website: "https://mountainview.example.com", has_website: "yes", has_direct_booking: "no", notes: "Static site, no booking", source: "Google Maps", source_url: "https://maps.google.com/...", scraped_at: "2026-06-15T10:34:00", location_query: "villa koh samui", industry: "hotel", country: "Thailand", dedup_key: "k7l8m9n0" },
+    { name: "Sea Breeze Guesthouse", address: "Lamai Beach Rd", phone: "", phone_normalized: "", rating: "3.9", reviews: "78 reviews", website: "", has_website: "no", has_direct_booking: "no", notes: "No website listed", source: "Booking.com", source_url: "https://booking.com/...", scraped_at: "2026-06-15T10:36:00", location_query: "", industry: "hotel", country: "Thailand", dedup_key: "o1p2q3r4" },
+    { name: "Palm Tree Resort", address: "Choeng Mon", phone: "+66 77 234 567", phone_normalized: "+6677234567", rating: "4.4", reviews: "267 reviews", website: "https://palmtree.example.com", has_website: "yes", has_direct_booking: "no", notes: "OTA only: agoda.com", source: "Agoda", source_url: "https://agoda.com/...", scraped_at: "2026-06-15T10:44:00", location_query: "", industry: "hotel", country: "Thailand", dedup_key: "s5t6u7v8" },
+    { name: "La Cantina Tulum", address: "Tulum Beach Zone", phone: "+52 984 123 4567", phone_normalized: "+529841234567", rating: "4.7", reviews: "423 reviews", website: "", has_website: "no", has_direct_booking: "no", notes: "IG-only presence", source: "Instagram", source_url: "https://instagram.com/...", scraped_at: "2026-06-15T11:00:00", location_query: "", industry: "restaurant", country: "Mexico", dedup_key: "w9x0y1z2" },
+    { name: "Bistro de Bali", address: "Ubud, Bali", phone: "0812-3456-7890", phone_normalized: "+6281234567890", rating: "4.5", reviews: "189 reviews", website: "https://bistrodebali.example.com", has_website: "yes", has_direct_booking: "no", notes: "Static site, no booking", source: "TripAdvisor", source_url: "https://tripadvisor.com/...", scraped_at: "2026-06-15T11:05:00", location_query: "", industry: "restaurant", country: "Indonesia", dedup_key: "a3b4c5d6" },
+    { name: "Lisbon Guest House", address: "Alfama, Lisbon", phone: "+351 21 234 5678", phone_normalized: "+351212345678", rating: "4.3", reviews: "156 reviews", website: "", has_website: "no", has_direct_booking: "no", notes: "No website listed", source: "Google Maps", source_url: "https://maps.google.com/...", scraped_at: "2026-06-15T11:10:00", location_query: "guesthouse lisbon portugal", industry: "hotel", country: "Portugal", dedup_key: "e7f8g9h0" },
+  ]
+};
+
+// ─── UI HELPERS ───
+function showToast(msg, type='info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${type==='success'?'✅':type==='error'?'❌':type==='warn'?'⚠️':'ℹ️'}</span> <span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity='0'; toast.style.transform='translateX(100%)'; setTimeout(()=>toast.remove(),300); }, 4000);
+}
+
+function toggleSource(el) {
+  el.classList.toggle('active');
+  const cb = el.querySelector('input');
+  cb.checked = el.classList.contains('active');
+}
+
+function applyPreset() {
+  const preset = document.getElementById('cfgPreset').value;
+  if (!preset) return;
+  const p = PRESETS[preset];
+  document.getElementById('cfgLocation').value = p.location;
+  document.getElementById('cfgProvince').value = p.province;
+  document.getElementById('cfgCountry').value = p.country;
+  document.getElementById('cfgIndustry').value = p.industry;
+  document.getElementById('cfgMapsQueries').value = p.maps_queries.join('\n');
+  document.getElementById('cfgFbQueries').value = p.fb_queries.join('\n');
+  document.getElementById('cfgIgQueries').value = p.ig_queries.join('\n');
+  document.querySelectorAll('#sourceCheckboxes .checkbox-item').forEach(el => {
+    const val = el.dataset.value;
+    const shouldCheck = p.sources.includes(val);
+    el.classList.toggle('active', shouldCheck);
+    el.querySelector('input').checked = shouldCheck;
+  });
+}
+
+function updateQueryDefaults() {
+  const industry = document.getElementById('cfgIndustry').value;
+  const loc = document.getElementById('cfgLocation').value;
+  if (!document.getElementById('cfgMapsQueries').value.trim()) {
+    if (industry === 'restaurant') {
+      document.getElementById('cfgMapsQueries').value = `restaurant ${loc}\ncafe ${loc}\nbar ${loc}\nbistro ${loc}\neatery ${loc}\nfood ${loc}\ndining ${loc}`;
+    } else {
+      document.getElementById('cfgMapsQueries').value = `bed and breakfast ${loc}\nguesthouse ${loc}\nboutique hotel ${loc}\nsmall hotel ${loc}\nbungalow resort ${loc}\nvilla ${loc}\nhomestay ${loc}\nresort ${loc} cheap`;
+    }
+  }
+}
+
+function resetConfig() {
+  document.getElementById('cfgPreset').value = '';
+  document.getElementById('cfgLocation').value = 'Koh Samui';
+  document.getElementById('cfgProvince').value = 'Surat Thani';
+  document.getElementById('cfgCountry').value = 'Thailand';
+  document.getElementById('cfgIndustry').value = 'hotel';
+  document.getElementById('cfgBookingPages').value = 5;
+  document.getElementById('cfgTripadvisorPages').value = 4;
+  document.getElementById('cfgAgodaPages').value = 5;
+  document.getElementById('cfgRPM').value = 20;
+  applyPreset();
+  document.querySelectorAll('#sourceCheckboxes .checkbox-item').forEach(el => {
+    el.classList.add('active');
+    el.querySelector('input').checked = true;
+  });
+}
+
+function getSelectedSources() {
+  return Array.from(document.querySelectorAll('#sourceCheckboxes input:checked')).map(cb => cb.value);
+}
+
+function generateConfig() {
+  const config = {
+    location: document.getElementById('cfgLocation').value,
+    province: document.getElementById('cfgProvince').value,
+    country: document.getElementById('cfgCountry').value,
+    industry: document.getElementById('cfgIndustry').value,
+    sources: getSelectedSources(),
+    booking_pages: parseInt(document.getElementById('cfgBookingPages').value) || 5,
+    tripadvisor_pages: parseInt(document.getElementById('cfgTripadvisorPages').value) || 4,
+    agoda_pages: parseInt(document.getElementById('cfgAgodaPages').value) || 5,
+    requests_per_minute: parseInt(document.getElementById('cfgRPM').value) || 20,
+    maps_queries: document.getElementById('cfgMapsQueries').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    facebook_queries: document.getElementById('cfgFbQueries').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    instagram_queries: document.getElementById('cfgIgQueries').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    output_dir: ".",
+    headless: true,
+    google_sheets: { enabled: false, sheet_id: "", credentials: "credentials.json" }
+  };
+  document.getElementById('configOutput').textContent = JSON.stringify(config, null, 2);
+  document.getElementById('configModal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('configModal').classList.remove('open'); }
+function copyConfig() { navigator.clipboard.writeText(document.getElementById('configOutput').textContent); showToast('Config copied!', 'success'); }
+function downloadConfig() {
+  const blob = new Blob([document.getElementById('configOutput').textContent], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'scraper_config.json';
+  a.click();
+  showToast('Config downloaded!', 'success');
+}
+
+function showSheetsGuide() { document.getElementById('sheetsModal').classList.add('open'); }
+function closeSheetsModal() { document.getElementById('sheetsModal').classList.remove('open'); }
+
+// ─── DATA HANDLING ───
+function loadData(data) {
+  allData = data.leads || data.all_results || [];
+  updateStats(data.summary || {});
+  applyFilters();
+  showToast(`Loaded ${allData.length} records`, 'success');
+}
+
+function loadDemoData() { loadData(DEMO_DATA); }
+
+function handleFileImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      loadData(data);
+      if (data.config) {
+        document.getElementById('cfgLocation').value = data.config.location || '';
+        document.getElementById('cfgProvince').value = data.config.province || '';
+        document.getElementById('cfgCountry').value = data.config.country || '';
+        document.getElementById('cfgIndustry').value = data.config.industry || 'hotel';
+        if (data.config.maps_queries) document.getElementById('cfgMapsQueries').value = data.config.maps_queries.join('\n');
+        if (data.config.facebook_queries) document.getElementById('cfgFbQueries').value = data.config.facebook_queries.join('\n');
+        if (data.config.instagram_queries) document.getElementById('cfgIgQueries').value = data.config.instagram_queries.join('\n');
+        if (data.config.booking_pages) document.getElementById('cfgBookingPages').value = data.config.booking_pages;
+        if (data.config.tripadvisor_pages) document.getElementById('cfgTripadvisorPages').value = data.config.tripadvisor_pages;
+        if (data.config.agoda_pages) document.getElementById('cfgAgodaPages').value = data.config.agoda_pages;
+      }
+    } catch(err) { showToast('Invalid JSON file', 'error'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function updateStats(summary) {
+  document.getElementById('statTotal').textContent = summary.total_scraped || 0;
+  document.getElementById('statLeads').textContent = summary.total_leads || 0;
+  document.getElementById('statDeduped').textContent = summary.deduped || summary.total_leads || 0;
+  document.getElementById('statNoSite').textContent = summary.no_website || 0;
+  document.getElementById('statNoBooking').textContent = summary.website_no_booking || 0;
+  document.getElementById('statMaps').textContent = (summary.by_source && summary.by_source.maps) || 0;
+  document.getElementById('statBooking').textContent = (summary.by_source && summary.by_source.booking) || 0;
+  document.getElementById('statAgoda').textContent = (summary.by_source && summary.by_source.agoda) || 0;
+  document.getElementById('statTA').textContent = (summary.by_source && summary.by_source.tripadvisor) || 0;
+  document.getElementById('statFB').textContent = (summary.by_source && summary.by_source.facebook) || 0;
+  document.getElementById('statIG').textContent = (summary.by_source && summary.by_source.instagram) || 0;
+  document.getElementById('statCountries').textContent = (summary.countries && summary.countries.length) || 0;
+}
+
+// ─── FILTERING & SORTING ───
+function applyFilters() {
+  const text = document.getElementById('filterText').value.toLowerCase();
+  const source = document.getElementById('filterSource').value;
+  const industry = document.getElementById('filterIndustry').value;
+  const booking = document.getElementById('filterBooking').value;
+  const website = document.getElementById('filterWebsite').value;
+  const view = document.getElementById('filterView').value;
+
+  let data = [...allData];
+  if (view === 'leads') {
+    data = data.filter(r => r.has_website === 'no' || ['no','unknown'].includes(r.has_direct_booking));
+  }
+  if (text) {
+    data = data.filter(r =>
+      (r.name||'').toLowerCase().includes(text) ||
+      (r.address||'').toLowerCase().includes(text) ||
+      (r.notes||'').toLowerCase().includes(text) ||
+      (r.phone||'').toLowerCase().includes(text) ||
+      (r.phone_normalized||'').toLowerCase().includes(text)
+    );
+  }
+  if (source) data = data.filter(r => r.source === source);
+  if (industry) data = data.filter(r => r.industry === industry);
+  if (booking) data = data.filter(r => r.has_direct_booking === booking);
+  if (website) data = data.filter(r => r.has_website === website);
+
+  filteredData = data;
+  currentPage = 1;
+  sortData();
+  renderTable();
+  renderPagination();
+  document.getElementById('resultCount').textContent = `${filteredData.length} results`;
+}
+
+function sortTable(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = true; }
+  document.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
+  const th = document.querySelector(`th[onclick="sortTable('${col}')"]`);
+  if (th) th.classList.add('sorted');
+  sortData();
+  renderTable();
+}
+
+function sortData() {
+  filteredData.sort((a, b) => {
+    let av = a[sortCol] || '', bv = b[sortCol] || '';
+    if (typeof av === 'string') av = av.toLowerCase();
+    if (typeof bv === 'string') bv = bv.toLowerCase();
+    if (av < bv) return sortAsc ? -1 : 1;
+    if (av > bv) return sortAsc ? 1 : -1;
+    return 0;
+  });
+}
+
+// ─── TABLE RENDERING ───
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+  const table = document.getElementById('resultsTable');
+
+  if (filteredData.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    table.classList.add('hidden');
+    return;
+  }
+
+  empty.classList.add('hidden');
+  table.classList.remove('hidden');
+
+  const start = (currentPage - 1) * pageSize;
+  const pageData = filteredData.slice(start, start + pageSize);
+
+  tbody.innerHTML = pageData.map(row => {
+    const sourceBadge = {
+      'Google Maps': 'badge-maps',
+      'Booking.com': 'badge-booking',
+      'Agoda': 'badge-agoda',
+      'TripAdvisor': 'badge-tripadvisor',
+      'Facebook (via Maps)': 'badge-facebook',
+      'Instagram': 'badge-instagram'
+    }[row.source] || 'badge-unknown';
+
+    const webBadge = row.has_website === 'yes' ? 'badge-yes' : 'badge-no';
+    const bookBadge = row.has_direct_booking === 'yes' ? 'badge-yes' : row.has_direct_booking === 'unknown' ? 'badge-unknown' : 'badge-no';
+    const indBadge = row.industry === 'restaurant' ? 'badge-restaurant' : 'badge-hotel';
+
+    return `<tr>
+      <td><div class="truncate" title="${esc(row.name)}">${esc(row.name)}</div></td>
+      <td><div class="truncate truncate-sm" title="${esc(row.address)}">${esc(row.address||'—')}</div></td>
+      <td>${esc(row.phone||'—')}<br><span class="phone-normalized">${esc(row.phone_normalized||'')}</span></td>
+      <td>${esc(row.rating||'—')} <span style="color:var(--fg3);font-size:0.78rem;">${esc(row.reviews||'')}</span></td>
+      <td><span class="badge ${sourceBadge}">${esc(row.source||'—')}</span></td>
+      <td><span class="badge ${indBadge}">${row.industry==='restaurant'?'Restaurant':'Hotel'}</span></td>
+      <td><span class="badge ${webBadge}">${row.has_website==='yes'?'Yes':'No'}</span></td>
+      <td><span class="badge ${bookBadge}">${row.has_direct_booking==='yes'?'Yes':row.has_direct_booking==='unknown'?'?':'No'}</span></td>
+      <td><div class="truncate" title="${esc(row.notes)}">${esc(row.notes||'—')}</div></td>
+      <td>
+        ${row.website ? `<a class="link" href="${esc(row.website)}" target="_blank" title="Open website">🌐</a>` : ''}
+        ${row.source_url ? `<a class="link" href="${esc(row.source_url)}" target="_blank" title="Open source">🔗</a>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPagination() {
+  const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
+  const container = document.getElementById('pagination');
+  if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+  let html = `<button ${currentPage===1?'disabled':''} onclick="goPage(${currentPage-1})">← Prev</button>`;
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+      html += `<button class="${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    } else if (i === currentPage - 3 || i === currentPage + 3) {
+      html += `<span style="color:var(--fg3);padding:0 4px;">…</span>`;
+    }
+  }
+  html += `<button ${currentPage===totalPages?'disabled':''} onclick="goPage(${currentPage+1})">Next →</button>`;
+  html += `<span class="page-info">Page ${currentPage} of ${totalPages}</span>`;
+  container.innerHTML = html;
+}
+
+function goPage(p) {
+  const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
+  if (p < 1 || p > totalPages) return;
+  currentPage = p;
+  renderTable();
+  renderPagination();
+  document.getElementById('resultsTable').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── EXPORT ───
+function exportCSV(type) {
+  const data = type === 'leads'
+    ? allData.filter(r => r.has_website === 'no' || ['no','unknown'].includes(r.has_direct_booking))
+    : allData;
+  if (data.length === 0) { showToast('No data to export', 'error'); return; }
+
+  const headers = ['name','address','phone','phone_normalized','rating','reviews','website','has_website','has_direct_booking','notes','source','source_url','industry','country','scraped_at','location_query','dedup_key'];
+  const csv = [headers.join(',')];
+  data.forEach(r => {
+    csv.push(headers.map(h => `"${(r[h]||'').replace(/"/g,'""')}"`).join(','));
+  });
+
+  const blob = new Blob(["\uFEFF" + csv.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `leads_${type}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast(`Exported ${data.length} rows to CSV`, 'success');
+}
+
+function exportJSON() {
+  if (allData.length === 0) { showToast('No data to export', 'error'); return; }
+  const config = {
+    location: document.getElementById('cfgLocation').value,
+    province: document.getElementById('cfgProvince').value,
+    country: document.getElementById('cfgCountry').value,
+    industry: document.getElementById('cfgIndustry').value,
+  };
+  const summary = {
+    total_scraped: allData.length,
+    total_leads: allData.filter(r => r.has_website === 'no' || ['no','unknown'].includes(r.has_direct_booking)).length,
+    no_website: allData.filter(r => r.has_website === 'no').length,
+    website_no_booking: allData.filter(r => r.has_website === 'yes' && r.has_direct_booking !== 'yes').length,
+    deduped: new Set(allData.map(r => r.dedup_key).filter(Boolean)).size,
+    countries: [...new Set(allData.map(r => r.country).filter(Boolean))],
+    industries: [...new Set(allData.map(r => r.industry).filter(Boolean))],
+  };
+  const payload = { config, summary, all_results: allData, leads: allData.filter(r => r.has_website === 'no' || ['no','unknown'].includes(r.has_direct_booking)) };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `leads_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  showToast('Exported full results to JSON', 'success');
+}
+let statusInterval = null;
+
+function runScraper() {
+  // 1. Récupérer les valeurs des champs du Dashboard
+  const payload = {
+    location: document.getElementById('location preset ou input')?.value || "Koh Samui",
+    country: document.getElementById('country')?.value || "Thailand",
+    industry: document.querySelector('input[name="industry"]:checked')?.value || "hotel",
+    sources: Array.from(document.querySelectorAll('input[name="sources"]:checked')).map(el => el.value)
+  };
+
+  showToast('Démarrage du scraper distant...', 'info');
+
+  // 2. Envoyer la commande à l'API FastAPI
+  fetch('http://127.0.0.1:8000/api/start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === 'started' || data.status === 'already_running') {
+      // 3. Lancer un polling toutes les secondes pour mettre à jour l'interface
+      if (statusInterval) clearInterval(statusInterval);
+      statusInterval = setInterval(checkScraperStatus, 1000);
+    }
+  })
+  .catch(err => {
+    showToast('Erreur de connexion avec l\'API Python', 'danger');
+    console.error(err);
+  });
+}
+
+function checkScraperStatus() {
+  fetch('http://127.0.0.1:8000/api/status')
+  .then(res => res.json())
+  .then(status => {
+    // Mettre à jour la barre de progression ou les compteurs du dashboard avec les vraies données
+    console.log("Progression : ", status.progress, "% | Source actuelle :", status.current_source);
+    
+    if (!status.running && status.progress === 100) {
+      clearInterval(statusInterval);
+      showToast('Scraping terminé avec succès !', 'success');
+      // charger les données reçues dans votre fonction d'affichage de table
+      // updateTable(status.results); 
+    }
+  });
+}
+
+// ─── INIT ───
+document.addEventListener('DOMContentLoaded', () => {
+  applyPreset();
+  if (location.hash.startsWith('#data=')) {
+    try {
+      const data = JSON.parse(decodeURIComponent(location.hash.slice(6)));
+      loadData(data);
+      history.replaceState(null, '', location.pathname);
+    } catch(e) {}
+  }
+});
+</script>
+
+</body>
+</html>

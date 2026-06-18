@@ -428,8 +428,22 @@
 
     <div class="btn-row">
       <button class="btn btn-primary" onclick="generateConfig()">Generate Config</button>
-      <button class="btn btn-warn" onclick="runScraper()">Run Scraper</button>
+      <button class="btn btn-warn" id="btnRun" onclick="runScraper()">▶ Run Scraper</button>
       <button class="btn btn-secondary" onclick="resetConfig()">Reset</button>
+    </div>
+
+    <!-- PROGRESS -->
+    <div id="progressSection" style="display:none;margin-top:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span id="progressSource" style="font-size:0.85rem;color:var(--fg2);">Idle</span>
+        <span id="progressPct" style="font-size:0.85rem;font-weight:700;color:var(--accent);">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div style="margin-top:8px;font-size:0.8rem;color:var(--fg3);">
+        Leads found so far: <span id="progressLeads" style="color:var(--accent);font-weight:700;">0</span>
+      </div>
     </div>
   </div>
 
@@ -1007,53 +1021,87 @@ function exportJSON() {
   a.click();
   showToast('Exported full results to JSON', 'success');
 }
+const API = window.location.origin;
 let statusInterval = null;
 
+function setProgressUI(pct, source, leads) {
+  document.getElementById('progressSection').style.display = 'block';
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressSource').textContent = source || 'Running...';
+  document.getElementById('progressLeads').textContent = leads || 0;
+}
+
 function runScraper() {
-  // 1. Récupérer les valeurs des champs du Dashboard
+  const sources = Array.from(document.querySelectorAll('#sourceCheckboxes .checkbox-item.active'))
+    .map(el => el.dataset.value).filter(Boolean);
+
+  if (sources.length === 0) {
+    showToast('Select at least one data source', 'error');
+    return;
+  }
+
   const payload = {
-    location: document.getElementById('location preset ou input')?.value || "Koh Samui",
-    country: document.getElementById('country')?.value || "Thailand",
-    industry: document.querySelector('input[name="industry"]:checked')?.value || "hotel",
-    sources: Array.from(document.querySelectorAll('input[name="sources"]:checked')).map(el => el.value)
+    location: document.getElementById('cfgLocation')?.value || 'Koh Samui',
+    country: document.getElementById('cfgCountry')?.value || 'Thailand',
+    industry: document.getElementById('cfgIndustry')?.value || 'hotel',
+    sources,
   };
 
-  showToast('Démarrage du scraper distant...', 'info');
+  document.getElementById('btnRun').disabled = true;
+  document.getElementById('btnRun').textContent = '⏳ Running...';
+  setProgressUI(5, 'Starting...', 0);
+  showToast('Scraper started', 'info');
 
-  // 2. Envoyer la commande à l'API FastAPI
-  fetch('http://127.0.0.1:8000/api/start', {
+  fetch(`${API}/api/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   })
   .then(res => res.json())
   .then(data => {
     if (data.status === 'started' || data.status === 'already_running') {
-      // 3. Lancer un polling toutes les secondes pour mettre à jour l'interface
       if (statusInterval) clearInterval(statusInterval);
-      statusInterval = setInterval(checkScraperStatus, 1000);
+      statusInterval = setInterval(checkScraperStatus, 2000);
     }
   })
   .catch(err => {
-    showToast('Erreur de connexion avec l\'API Python', 'danger');
+    showToast('Cannot reach API — is the server running?', 'danger');
+    document.getElementById('btnRun').disabled = false;
+    document.getElementById('btnRun').textContent = '▶ Run Scraper';
     console.error(err);
   });
 }
 
 function checkScraperStatus() {
-  fetch('http://127.0.0.1:8000/api/status')
+  fetch(`${API}/api/status`)
   .then(res => res.json())
   .then(status => {
-    // Mettre à jour la barre de progression ou les compteurs du dashboard avec les vraies données
-    console.log("Progression : ", status.progress, "% | Source actuelle :", status.current_source);
-    
+    setProgressUI(status.progress, status.current_source, status.leads_found);
+
     if (!status.running && status.progress === 100) {
       clearInterval(statusInterval);
-      showToast('Scraping terminé avec succès !', 'success');
-      // charger les données reçues dans votre fonction d'affichage de table
-      // updateTable(status.results); 
+      document.getElementById('btnRun').disabled = false;
+      document.getElementById('btnRun').textContent = '▶ Run Scraper';
+      showToast(`Done! ${status.leads_found} leads found`, 'success');
+
+      if (status.results && status.results.length > 0) {
+        allData = status.results;
+        if (status.summary && Object.keys(status.summary).length) {
+          updateStats(status.summary);
+        }
+        applyFilters();
+      }
     }
-  });
+
+    if (!status.running && status.progress !== 100 && status.current_source.startsWith('Error')) {
+      clearInterval(statusInterval);
+      document.getElementById('btnRun').disabled = false;
+      document.getElementById('btnRun').textContent = '▶ Run Scraper';
+      showToast('Scraper error: ' + status.current_source, 'danger');
+    }
+  })
+  .catch(() => {});
 }
 
 // ─── INIT ───

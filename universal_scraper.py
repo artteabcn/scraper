@@ -1335,7 +1335,7 @@ def export_to_google_sheets(leads: list[Lead], config: ScraperConfig, sheet_name
 async def run_scraper(config: ScraperConfig) -> dict:
     """Run the full scraper pipeline and return results."""
     all_results: list[Lead] = []
-    deduper = Deduplicator(threshold=config.dedup_threshold)
+    deduper = Deduplicator(name_threshold=config.dedup_threshold)
     limiter = RateLimiter(requests_per_minute=config.requests_per_minute)
 
     print(f"\n{'='*60}")
@@ -1586,7 +1586,8 @@ scraper_status = {
     "progress": 0,
     "leads_found": 0,
     "current_source": "Idle",
-    "results": []
+    "results": [],
+    "summary": {},
 }
 
 class ScrapeRequest(BaseModel):
@@ -1617,7 +1618,15 @@ async def run_scraper_task(req: ScrapeRequest):
         scraper_status["progress"] = 100
         scraper_status["current_source"] = "Finished"
         scraper_status["leads_found"] = result.get("total_leads", 0)
-        scraper_status["results"] = result.get("leads", [])
+        scraper_status["results"] = result.get("all_results", [])
+        scraper_status["summary"] = {
+            "total_scraped": result.get("total_scraped", 0),
+            "total_leads": result.get("total_leads", 0),
+            "by_source": result.get("by_source", {}),
+            "no_website": sum(1 for r in result.get("all_results", []) if r.get("has_website") == "no"),
+            "website_no_booking": sum(1 for r in result.get("all_results", []) if r.get("has_website") == "yes" and r.get("has_direct_booking") != "yes"),
+            "countries": list({r.get("country") for r in result.get("all_results", []) if r.get("country")}),
+        }
     except Exception as e:
         scraper_status["current_source"] = f"Error: {str(e)}"
     finally:

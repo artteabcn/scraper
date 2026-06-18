@@ -1085,18 +1085,19 @@ function checkScraperStatus() {
   .then(status => {
     setProgressUI(status.progress, status.current_source, status.leads_found, status.log);
 
+    // Stream results into the table as each source finishes (don't wait for 100%)
+    if (status.results && status.results.length > 0 && status.results.length !== allData.length) {
+      allData = status.results;
+      applyFilters();
+    }
+
     if (!status.running && status.progress === 100) {
       clearInterval(statusInterval);
       document.getElementById('btnRun').disabled = false;
       document.getElementById('btnRun').textContent = '▶ Run Scraper';
-      showToast(`Done! ${status.leads_found} leads found`, 'success');
-
-      if (status.results && status.results.length > 0) {
-        allData = status.results;
-        if (status.summary && Object.keys(status.summary).length) {
-          updateStats(status.summary);
-        }
-        applyFilters();
+      showToast(`Done! ${status.leads_found} results found`, 'success');
+      if (status.summary && Object.keys(status.summary).length) {
+        updateStats(status.summary);
       }
     }
 

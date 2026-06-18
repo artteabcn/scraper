@@ -1385,20 +1385,28 @@ async def run_scraper(config: ScraperConfig, on_source_start=None, on_source_don
             if on_source_done:
                 on_source_done(source, len(all_results))
 
-        # Booking check for all leads with websites
-        print(f"\n[BOOKING CHECK] Checking {sum(1 for r in all_results if r.website)} websites...")
+        # Mark has_website immediately (booking check done separately)
         for r in all_results:
             if r.website:
                 r.has_website = "yes"
-                booking, note = await check_for_booking(context, r.website, config.industry)
-                r.has_direct_booking = booking
-                r.notes = note
             else:
                 r.has_website = "no"
                 r.has_direct_booking = "no"
                 r.notes = "No website listed"
-            symbol = "[Y]" if r.has_direct_booking == "yes" else "[N]"
-            print(f"  {symbol} {r.name[:45]:<45} -> {r.notes}")
+
+        if on_source_start:
+            on_source_start("booking_check")
+
+        with_website = [r for r in all_results if r.website]
+        print(f"\n[BOOKING CHECK] Checking {len(with_website)} websites...")
+        for i, r in enumerate(with_website):
+            booking, note = await check_for_booking(context, r.website, config.industry)
+            r.has_direct_booking = booking
+            r.notes = note
+            symbol = "[Y]" if booking == "yes" else "[N]"
+            print(f"  {symbol} {r.name[:45]:<45} -> {note}")
+            if on_source_done:
+                on_source_done("booking_check", i + 1)
 
         await browser.close()
 
@@ -1613,19 +1621,30 @@ async def run_scraper_task(req: ScrapeRequest):
         "log": [f"Starting scrape: {req.location} ({req.country}) — {req.industry}"],
     })
 
-    n_sources = len(req.sources)
+    # +1 accounts for the booking_check phase that fires on_source_start/done
+    n_phases = len(req.sources) + 1
     done = [0]
 
     def on_source_start(source):
-        scraper_status["current_source"] = f"Scraping {source}..."
-        scraper_status["log"].append(f"▶ {source} started")
+        if source == "booking_check":
+            scraper_status["current_source"] = "Checking booking engines..."
+            scraper_status["log"].append(f"▶ Booking check started")
+        else:
+            scraper_status["current_source"] = f"Scraping {source}..."
+            scraper_status["log"].append(f"▶ {source} started")
 
     def on_source_done(source, total_so_far):
         done[0] += 1
-        pct = 10 + int(75 * done[0] / n_sources)
-        scraper_status["progress"] = pct
-        scraper_status["leads_found"] = total_so_far
-        scraper_status["log"].append(f"✓ {source} done — {total_so_far} total so far")
+        if source == "booking_check":
+            pct = 85 + int(10 * total_so_far / max(scraper_status["leads_found"], 1))
+            scraper_status["progress"] = min(pct, 95)
+        else:
+            pct = 10 + int(75 * done[0] / n_phases)
+            scraper_status["progress"] = pct
+            scraper_status["leads_found"] = total_so_far
+            # Push partial results to dashboard after each source
+            scraper_status["results"] = [r.to_dict() for r in live_results]
+            scraper_status["log"].append(f"✓ {source} done — {total_so_far} total so far")
 
     try:
         config = ScraperConfig(
